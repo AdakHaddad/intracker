@@ -1,27 +1,21 @@
 "use client";
-
 import { createContext, useEffect, useState } from "react";
+import Cookies from "js-cookie";
 
 export const ThemeContext = createContext();
 
-const getFromLocalStorage = () => {
-  if (typeof window !== "undefined") {
-    const value = localStorage.getItem("theme");
-    return value || "light";
-  }
-};
-
 export const ThemeContextProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    return getFromLocalStorage();
+    return Cookies.get("theme") || "light";
   });
 
   const toggle = () => {
-    setTheme(theme === "light" ? "dark" : "light");
+    setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
   };
 
   useEffect(() => {
-    localStorage.setItem("theme", theme);
+    // Save theme state to cookie
+    Cookies.set("theme", theme, { expires: 365 }); // Set cookie to expire in 1 year
   }, [theme]);
 
   return (
