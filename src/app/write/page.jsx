@@ -1,109 +1,56 @@
-"use client";
-
-import Image from "next/image";
-import styles from "./writePage.module.css";
-import { useEffect, useState } from "react";
+"use client"; // WritePage.js
 import "react-quill/dist/quill.bubble.css";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import {
-  getStorage,
-  ref,
-  uploadBytesResumable,
-  getDownloadURL,
-} from "firebase/storage";
-import { app } from "@/utils/firebase";
-import ReactQuill from "react-quill";
 
-const WritePage = () => {
-  const { status } = useSession();
-  const router = useRouter();
+import { useState } from "react";
 
-  const [open, setOpen] = useState(false);
-  const [file, setFile] = useState(null);
-  const [media, setMedia] = useState("");
-  const [value, setValue] = useState("");
+const WritePost = () => {
   const [title, setTitle] = useState("");
-  const [catSlug, setCatSlug] = useState("");
-
-  useEffect(() => {
-    const storage = getStorage(app);
-    const upload = () => {
-      const name = new Date().getTime() + file.name;
-      const storageRef = ref(storage, name);
-
-      const uploadTask = uploadBytesResumable(storageRef, file);
-
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress =
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          console.log("Upload is " + progress + "% done");
-          switch (snapshot.state) {
-            case "paused":
-              console.log("Upload is paused");
-              break;
-            case "running":
-              console.log("Upload is running");
-              break;
-          }
-        },
-        (error) => {},
-        () => {
-          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-            setMedia(downloadURL);
-          });
-        }
-      );
-    };
-
-    file && upload();
-  }, [file]);
-
-  if (status === "loading") {
-    return <div className={styles.loading}>Loading...</div>;
-  }
-
-  if (status === "unauthenticated") {
-    router.push("/");
-  }
-
-  const slugify = (str) =>
-    str
-      .toLowerCase()
-      .trim()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/[\s_-]+/g, "-")
-      .replace(/^-+|-+$/g, "");
+  const [category, setCategory] = useState("style");
+  const [content, setContent] = useState("");
+  const [image, setImage] = useState(null);
 
   const handleSubmit = async () => {
-    const res = await fetch("/api/posts", {
-      method: "POST",
-      body: JSON.stringify({
-        title,
-        desc: value,
-        img: media,
-        slug: slugify(title),
-        catSlug: catSlug || "style", //If not selected, choose the general category
-      }),
-    });
+    // Perform any necessary form validation here
+    if (!title || !content || !category || !image) {
+      console.error("Please fill in all fields.");
+      return;
+    }
 
-    if (res.status === 200) {
-      const data = await res.json();
-      router.push(`/posts/${data.slug}`);
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("category", category);
+    formData.append("content", content);
+    formData.append("image", image);
+
+    try {
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log("Post created successfully:", data);
+        // Redirect or do something else after successful creation
+      } else {
+        console.error("Failed to create post:", res.statusText);
+        // Handle error
+      }
+    } catch (error) {
+      console.error("Error creating post:", error);
+      // Handle network or other errors
     }
   };
 
   return (
-    <div className={styles.container}>
+    <div>
       <input
         type="text"
         placeholder="Title"
-        className={styles.input}
+        value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
-      <select className={styles.select} onChange={(e) => setCatSlug(e.target.value)}>
+      <select value={category} onChange={(e) => setCategory(e.target.value)}>
         <option value="style">style</option>
         <option value="fashion">fashion</option>
         <option value="food">food</option>
@@ -111,44 +58,15 @@ const WritePage = () => {
         <option value="travel">travel</option>
         <option value="coding">coding</option>
       </select>
-      <div className={styles.editor}>
-        <button className={styles.button} onClick={() => setOpen(!open)}>
-          <Image src="/plus.png" alt="" width={16} height={16} />
-        </button>
-        {open && (
-          <div className={styles.add}>
-            <input
-              type="file"
-              id="image"
-              onChange={(e) => setFile(e.target.files[0])}
-              style={{ display: "none" }}
-            />
-            <button className={styles.addButton}>
-              <label htmlFor="image">
-                <Image src="/image.png" alt="" width={16} height={16} />
-              </label>
-            </button>
-            <button className={styles.addButton}>
-              <Image src="/external.png" alt="" width={16} height={16} />
-            </button>
-            <button className={styles.addButton}>
-              <Image src="/video.png" alt="" width={16} height={16} />
-            </button>
-          </div>
-        )}
-        <ReactQuill
-          className={styles.textArea}
-          theme="bubble"
-          value={value}
-          onChange={setValue}
-          placeholder="Tell your story..."
-        />
-      </div>
-      <button className={styles.publish} onClick={handleSubmit}>
-        Publish
-      </button>
+      <textarea
+        placeholder="Content"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+      ></textarea>
+      <input type="file" onChange={(e) => setImage(e.target.files[0])} />
+      <button onClick={handleSubmit}>Publish</button>
     </div>
   );
 };
 
-export default WritePage;
+export default WritePost;
