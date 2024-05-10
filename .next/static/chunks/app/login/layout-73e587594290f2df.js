@@ -1,0 +1,1 @@
+(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[988],{7819:function(e,n,_){Promise.resolve().then(_.t.bind(_,5268,23))},5268:function(e){e.exports={style:{fontFamily:"'__Sora_ec8806', '__Sora_Fallback_ec8806'",fontStyle:"normal"},className:"__className_ec8806"}}},function(e){e.O(0,[971,69,744],function(){return e(e.s=7819)}),_N_E=e.O()}]);
